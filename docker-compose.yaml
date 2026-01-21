@@ -1,0 +1,87 @@
+# nginx proxy address - http://172.17.0.1:2283
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "1"
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: immich-server
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - immich
+    ports:
+      - "2283:3001"
+    environment:
+      TZ: ${TZ:-America/New_York}
+      DB_HOSTNAME: immich-db
+      DB_USERNAME: ${DB_USER_NAME:-immich}
+      DB_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+      DB_DATABASE_NAME: ${DB_CREATE_DATABASE_NAME:-immich}
+      REDIS_HOSTNAME: immich-redis
+      UPLOAD_LOCATION: /usr/src/app/upload
+    volumes:
+      - ./rootfs/data/immich:/usr/src/app/upload
+    depends_on:
+      - immich-db
+      - immich-redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/server-info/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: immich-ml
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - immich
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./rootfs/data/ml-cache:/cache
+
+  immich-db:
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    container_name: immich-db
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - immich
+    environment:
+      TZ: ${TZ:-America/New_York}
+      POSTGRES_USER: ${DB_USER_NAME:-immich}
+      POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+      POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-immich}
+    volumes:
+      - ./rootfs/db/postgres/immich:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  immich-redis:
+    image: redis:7-alpine
+    container_name: immich-redis
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - immich
+    environment:
+      TZ: ${TZ:-America/New_York}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  immich:
+    external: false
