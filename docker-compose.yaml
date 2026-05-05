@@ -25,7 +25,7 @@ services:
       REDIS_HOSTNAME: immich-redis
       UPLOAD_LOCATION: /usr/src/app/upload
     volumes:
-      - ./rootfs/data/immich:/usr/src/app/upload
+      - ./volumes/data/immich:/usr/src/app/upload
     depends_on:
       - immich-db
       - immich-redis
@@ -45,7 +45,7 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
     volumes:
-      - ./rootfs/data/ml-cache:/cache
+      - ./volumes/data/ml-cache:/cache
 
   immich-db:
     image: tensorchord/pgvecto-rs:pg14-v0.2.0
@@ -60,7 +60,7 @@ services:
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
       POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-immich}
     volumes:
-      - ./rootfs/data/db/postgres/immich:/var/lib/postgresql/data
+      - ./volumes/data/db/postgres/immich:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 30s
