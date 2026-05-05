@@ -55,9 +55,9 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/immich` - Data storage
-- `./rootfs/data/ml-cache` - Data storage
-- `./rootfs/data/db/postgres/immich` - Data storage
+- `./volumes/data/immich` - Data storage
+- `./volumes/data/ml-cache` - Data storage
+- `./volumes/data/db/postgres/immich` - Data storage
 
 ## 🔐 Security
 
