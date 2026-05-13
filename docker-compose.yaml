@@ -1,5 +1,6 @@
 # nginx proxy address - http://172.17.0.1:2283
 
+name: immich
 x-logging: &default-logging
   driver: json-file
   options:
@@ -9,13 +10,14 @@ x-logging: &default-logging
 services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:release
+    pull_policy: always
     container_name: immich-server
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - immich
     ports:
-      - "2283:3001"
+      - "172.17.0.1:2283:3001"
     environment:
       TZ: ${TZ:-America/New_York}
       DB_HOSTNAME: immich-db
@@ -37,8 +39,9 @@ services:
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release
+    pull_policy: always
     container_name: immich-ml
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - immich
@@ -49,8 +52,9 @@ services:
 
   immich-db:
     image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    pull_policy: always
     container_name: immich-db
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - immich
@@ -68,9 +72,10 @@ services:
       retries: 3
 
   immich-redis:
-    image: redis:7-alpine
+    image: redis:alpine
+    pull_policy: always
     container_name: immich-redis
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - immich
@@ -84,4 +89,5 @@ services:
 
 networks:
   immich:
+    name: immich
     external: false
