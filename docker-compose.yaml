@@ -19,7 +19,7 @@ services:
       - proxy
       - cloudflare
     ports:
-      - "172.17.0.1:2283:3001"
+      - "172.17.0.1:2283:2283"
     environment:
       TZ: ${TZ:-America/New_York}
       DB_HOSTNAME: immich-db
@@ -36,7 +36,7 @@ services:
       - immich-db
       - immich-redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/api/server-info/ping"]
+      test: ["CMD", "curl", "-f", "http://localhost:2283/api/server/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,7 +44,7 @@ services:
       - 'traefik.enable=true'
       - 'cloudflare.enable=true'
       - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://immich-server:3001'
+      - 'cloudflare.service=http://immich-server:2283'
       - 'cloudflare.hostname=immich.${CLOUDFLARE_ZONE_NAME:-}'
       - 'traefik.http.routers.immich-server.entrypoints=http'
       - 'traefik.http.routers.immich-server-secure.tls=true'
@@ -55,7 +55,7 @@ services:
       - 'traefik.http.routers.immich-server-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
       - 'traefik.http.routers.immich-server-secure.tls.certresolver=cloudflare'
       - 'traefik.http.routers.immich-server-secure.service=immich-server'
-      - 'traefik.http.services.immich-server.loadbalancer.server.port=3001'
+      - 'traefik.http.services.immich-server.loadbalancer.server.port=2283'
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release
@@ -72,7 +72,7 @@ services:
       - ./volumes/data/ml-cache:/cache
 
   immich-db:
-    image: tensorchord/pgvecto-rs:pg14-v0.2.0
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
     pull_policy: always
     container_name: immich-db
     restart: always
