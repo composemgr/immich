@@ -16,6 +16,8 @@ services:
     logging: *default-logging
     networks:
       - immich
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:2283:3001"
     environment:
@@ -26,6 +28,8 @@ services:
       DB_DATABASE_NAME: ${DB_CREATE_DATABASE_NAME:-immich}
       REDIS_HOSTNAME: immich-redis
       UPLOAD_LOCATION: /usr/src/app/upload
+      CONTAINER_NAME: immich-server
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/data/immich:/usr/src/app/upload
     depends_on:
@@ -36,6 +40,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://immich-server:3001'
+      - 'cloudflare.hostname=immich.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.immich-server.entrypoints=http'
+      - 'traefik.http.routers.immich-server-secure.tls=true'
+      - 'traefik.http.routers.immich-server.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.immich-server-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.immich-server.middlewares=immich-server-https-redirect'
+      - 'traefik.http.routers.immich-server-secure.entrypoints=https'
+      - 'traefik.http.routers.immich-server-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.immich-server-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.immich-server-secure.service=immich-server'
+      - 'traefik.http.services.immich-server.loadbalancer.server.port=3001'
 
   immich-machine-learning:
     image: ghcr.io/immich-app/immich-machine-learning:release
@@ -47,6 +67,7 @@ services:
       - immich
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: immich-ml
     volumes:
       - ./volumes/data/ml-cache:/cache
 
@@ -63,6 +84,7 @@ services:
       POSTGRES_USER: ${DB_USER_NAME:-immich}
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
       POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-immich}
+      CONTAINER_NAME: immich-db
     volumes:
       - ./volumes/data/db/postgres/immich:/var/lib/postgresql/data
     healthcheck:
@@ -81,6 +103,7 @@ services:
       - immich
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: immich-redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -91,3 +114,7 @@ networks:
   immich:
     name: immich
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
